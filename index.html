@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mechanical Mechanisms - Interactive Gallery</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --panel: #1e1e1e;
+            --accent: #00e5ff;
+            --text: #e0e0e0;
+            --text-muted: #888;
+            --border: #333;
+            --link-fixed: #444;
+            --link-driver: #ff5252;
+            --link-output: #4caf50;
+            --trace: #ffeb3b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--panel);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .title h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: rgba(0, 229, 255, 0.1);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        #sidebar {
+            width: 300px;
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .slider-row {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            background: #333;
+            border: none;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .action-btn:hover { background: #444; }
+        .action-btn.primary { background: var(--accent); color: #000; font-weight: bold; }
+        .action-btn.primary:hover { background: #00b8cc; }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .description {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .legend {
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .swatch { width: 12px; height: 12px; border-radius: 2px; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="title">
+        <h1>Mechanical Mechanisms</h1>
+    </div>
+    <div class="tabs" id="mechanismTabs">
+        <button class="tab-btn active" data-mech="fourbar">Four-Bar</button>
+        <button class="tab-btn" data-mech="geneva">Geneva Drive</button>
+        <button class="tab-btn" data-mech="scotch">Scotch Yoke</button>
+        <button class="tab-btn" data-mech="planetary">Planetary Gears</button>
+    </div>
+</header>
+
+<main>
+    <div id="canvas-container">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+    <div id="sidebar">
+        <div class="control-group">
+            <h3>Playback</h3>
+            <div class="button-row">
+                <button id="playPauseBtn" class="action-btn primary">Pause</button>
+                <button id="resetBtn" class="action-btn">Reset</button>
+            </div>
+            <div class="slider-row">
+                <div class="slider-label">
+                    <span>Speed (RPM)</span>
+                    <span id="speedVal">30</span>
+                </div>
+                <input type="range" id="speedSlider" min="0" max="120" value="30">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Visualization</h3>
+            <label class="toggle-row">
+                <input type="checkbox" id="traceToggle" checked> Trace Path
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" id="vectorToggle" checked> Force Vectors
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" id="labelToggle" checked> Labels & Dimensions
+            </label>
+            <button id="clearTraceBtn" class="action-btn">Clear Trace</button>
+        </div>
+
+        <div class="control-group" id="paramsGroup">
+            <h3>Parameters</h3>
+            <!-- Dynamic parameters inserted here -->
+        </div>
+
+        <div class="control-group">
+            <h3>Description</h3>
+            <div id="mechDesc" class="description">
+                A Grashof-compliant closed loop mechanism consisting of four links.
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Legend</h3>
+            <div class="legend">
+                <div class="legend-item"><div class="swatch" style="background: var(--link-driver)"></div> Driver Link</div>
+                <div class="legend-item"><div class="swatch" style="background: var(--link-output)"></div> Output/Coupler</div>
+                <div class="legend-item"><div class="swatch" style="background: var(--link-fixed)"></div> Fixed Ground</div>
+                <div class="legend-item"><div class="swatch" style="background: var(--trace)"></div> Trace Path</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const tabs = document.querySelectorAll('.tab-btn');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedVal = document.getElementById('speedVal');
+    const traceToggle = document.getElementById('traceToggle');
+    const vectorToggle = document.getElementById('vectorToggle');
+    const labelToggle = document.getElementById('labelToggle');
+    const clearTraceBtn = document.getElementById('clearTraceBtn');
+    const paramsGroup = document.getElementById('paramsGroup');
+    const mechDesc = document.getElementById('mechDesc');
+
+    let currentMech = 'fourbar';
+    let isPaused = false;
+    let time = 0;
+    let speedMultiplier = 1;
+    let tracePoints = [];
+    const MAX_TRACE = 500;
+
+    // Mechanism States
+    const state = {
+        fourbar: {
+            L1: 150, // Ground
+            L2: 60,  // Crank
+            L3: 160, // Coupler
+            L4: 120, // Rocker
+            basePos: { x: -75, y: 50 }
+        },
+        geneva: {
+            radius: 80,
+            pinDist: 100,
+            slots: 6
+        },
+        scotch: {
+            radius: 60,
+            yokeWidth: 200
+        },
+        planetary: {
+            sunRadius: 40,
+            planetRadius: 20,
+            numPlanets: 3
+        }
+    };
+
+    const descriptions = {
+        fourbar: "A Grashof-compliant closed loop mechanism. Adjust link lengths to explore different configurations (Crank-Rocker, Double-Crank).",
+        geneva: "Translates continuous rotation into intermittent rotary motion. The drive wheel carries a pin that enters slots in the driven wheel.",
+        scotch: "Converts rotary motion into pure linear sinusoidal motion. Commonly used in control valve actuators and high-pressure gas compressors.",
+        planetary: "An epicyclic gear system. This model shows the sun gear (fixed), planet gears, and the carrier (output)."
+    };
+
+    function resize() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    // UI Events
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentMech = tab.dataset.mech;
+            tracePoints = [];
+            mechDesc.innerText = descriptions[currentMech];
+            updateParamsUI();
+        });
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+        isPaused = !isPaused;
+        playPauseBtn.innerText = isPaused ? "Resume" : "Pause";
+        playPauseBtn.classList.toggle('primary', isPaused);
+    });
+
+    resetBtn.addEventListener('click', () => {
+        time = 0;
+        tracePoints = [];
+    });
+
+    speedSlider.addEventListener('input', () => {
+        speedMultiplier = speedSlider.value / 30;
+        speedVal.innerText = speedSlider.value;
+    });
+
+    clearTraceBtn.addEventListener('click', () => {
+        tracePoints = [];
+    });
+
+    function updateParamsUI() {
+        paramsGroup.innerHTML = '<h3>Parameters</h3>';
+        const s = state[currentMech];
+
+        if (currentMech === 'fourbar') {
+            addSlider('Crank Length', 'L2', 20, 100, s.L2);
+            addSlider('Coupler Length', 'L3', 100, 250, s.L3);
+            addSlider('Rocker Length', 'L4', 50, 200, s.L4);
+        } else if (currentMech === 'geneva') {
+            addSlider('Slots', 'slots', 3, 12, s.slots, 1);
+        } else if (currentMech === 'scotch') {
+            addSlider('Crank Radius', 'radius', 20, 100, s.radius);
+        } else if (currentMech === 'planetary') {
+            addSlider('Planets', 'numPlanets', 2, 6, s.numPlanets, 1);
+        }
+    }
+
+    function addSlider(label, key, min, max, val, step = 1) {
+        const row = document.createElement('div');
+        row.className = 'slider-row';
+        row.innerHTML = `
+            <div class="slider-label"><span>${label}</span><span id="val-${key}">${val}</span></div>
+            <input type="range" min="${min}" max="${max}" value="${val}" step="${step}">
+        `;
+        const slider = row.querySelector('input');
+        slider.addEventListener('input', () => {
+            state[currentMech][key] = parseFloat(slider.value);
+            document.getElementById(`val-${key}`).innerText = slider.value;
+            tracePoints = [];
+        });
+        paramsGroup.appendChild(row);
+    }
+
+    updateParamsUI();
+
+    // Math & Drawing
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+
+        if (currentMech === 'fourbar') drawFourBar();
+        else if (currentMech === 'geneva') drawGeneva();
+        else if (currentMech === 'scotch') drawScotch();
+        else if (currentMech === 'planetary') drawPlanetary();
+
+        ctx.restore();
+
+        if (!isPaused) {
+            time += 0.02 * speedMultiplier;
+        }
+        requestAnimationFrame(draw);
+    }
+
+    function drawFourBar() {
+        const { L1, L2, L3, L4, basePos } = state.fourbar;
+        const angle = time;
+
+        // A is driver base, D is rocker base
+        const Ax = basePos.x;
+        const Ay = basePos.y;
+        const Dx = Ax + L1;
+        const Dy = Ay;
+
+        // B is end of crank
+        const Bx = Ax + L2 * Math.cos(angle);
+        const By = Ay + L2 * Math.sin(angle);
+
+        // Find C using intersection of circles (coupler L3 from B, rocker L4 from D)
+        const distBD = Math.sqrt((Dx - Bx) ** 2 + (Dy - By) ** 2);
+
+        // Law of cosines for angle at D in triangle BCD
+        const cosAlpha = (L4 * L4 + distBD * distBD - L3 * L3) / (2 * L4 * distBD);
+
+        if (Math.abs(cosAlpha) <= 1) {
+            const alpha = Math.acos(cosAlpha);
+            const angleBD = Math.atan2(By - Dy, Bx - Dx);
+
+            // Two solutions possible, we pick one
+            const Cx = Dx + L4 * Math.cos(angleBD + alpha);
+            const Cy = Dy + L4 * Math.sin(angleBD + alpha);
+
+            if (traceToggle.checked) {
+                tracePoints.push({x: Cx, y: Cy});
+                if (tracePoints.length > MAX_TRACE) tracePoints.shift();
+                drawTrace();
+            }
+
+            // Draw links
+            drawLine(Ax, Ay, Dx, Dy, 'var(--link-fixed)', 4); // Ground
+            drawLine(Ax, Ay, Bx, By, 'var(--link-driver)', 6); // Crank
+            drawLine(Bx, By, Cx, Cy, 'var(--link-output)', 6); // Coupler
+            drawLine(Dx, Dy, Cx, Cy, 'var(--link-output)', 6); // Rocker
+
+            // Joints
+            drawJoint(Ax, Ay);
+            drawJoint(Bx, By);
+            drawJoint(Cx, Cy);
+            drawJoint(Dx, Dy);
+
+            if (labelToggle.checked) {
+                drawText("A", Ax, Ay - 15);
+                drawText("B", Bx, By - 15);
+                drawText("C", Cx, Cy - 15);
+                drawText("D", Dx, Dy - 15);
+            }
+        } else {
+            // Mechanism locked/impossible geometry
+            drawText("Invalid Geometry", 0, 0, "#ff5252");
+            drawLine(Ax, Ay, Dx, Dy, '#555', 2);
+            drawLine(Ax, Ay, Bx, By, 'var(--link-driver)', 4);
+        }
+    }
+
+    function drawGeneva() {
+        const { radius, pinDist, slots } = state.geneva;
+        const driverAngle = time;
+        const wheelRadius = Math.sqrt(pinDist**2 + radius**2); // Approx
+
+        // Driver at (-pinDist, 0)
+        const Dx = -pinDist;
+        const Dy = 0;
+        const Px = Dx + radius * Math.cos(driverAngle);
+        const Py = Dy + radius * Math.sin(driverAngle);
+
+        // Calculate driven wheel angle
+        // The pin engages when it's within the slot entry angle
+        const entryAngle = Math.PI / slots;
+        const phi = Math.atan2(Py, Px);
+        let wheelAngle = 0;
+
+        // Logic for intermittent motion
+        const cycle = (driverAngle % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        const engageRange = Math.asin(radius / pinDist);
+
+        // This is a simplified visual model
+        const normalizedCycle = cycle > Math.PI ? cycle - Math.PI * 2 : cycle;
+        if (Math.abs(normalizedCycle) < Math.PI/2) {
+             const distToPin = Math.sqrt(Px*Px + Py*Py);
+             const beta = Math.atan2(Py, Px);
+             // Inside the slot
+             wheelAngle = Math.atan2(radius * Math.sin(driverAngle), pinDist + radius * Math.cos(driverAngle));
+        }
+
+        // Draw Driven Wheel (Maltese Cross)
+        ctx.strokeStyle = 'var(--link-output)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let i = 0; i < slots; i++) {
+            const a = (i / slots) * Math.PI * 2 + wheelAngle;
+            ctx.moveTo(0, 0);
+            ctx.lineTo(Math.cos(a) * wheelRadius, Math.sin(a) * wheelRadius);
+        }
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, wheelRadius * 0.8, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Draw Driver
+        ctx.strokeStyle = 'var(--link-driver)';
+        ctx.beginPath();
+        ctx.arc(Dx, Dy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        drawLine(Dx, Dy, Px, Py, 'var(--link-driver)', 4);
+        drawJoint(Px, Py, 5, 'var(--link-driver)');
+        drawJoint(Dx, Dy);
+        drawJoint(0, 0);
+    }
+
+    function drawScotch() {
+        const { radius, yokeWidth } = state.scotch;
+        const angle = time;
+
+        const crankX = radius * Math.cos(angle);
+        const crankY = radius * Math.sin(angle);
+
+        // Yoke linear position
+        const yokeX = crankX;
+
+        // Draw Crank
+        drawLine(0, 0, crankX, crankY, 'var(--link-driver)', 6);
+        drawJoint(0, 0);
+        drawJoint(crankX, crankY, 6, 'var(--accent)');
+
+        // Draw Yoke
+        ctx.strokeStyle = 'var(--link-output)';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(yokeX - 10, -yokeWidth/2, 20, yokeWidth);
+
+        // Connecting rod
+        drawLine(yokeX + 10, 0, yokeX + 150, 0, 'var(--link-output)', 8);
+        drawJoint(yokeX + 150, 0, 10, 'var(--link-output)');
+
+        if (traceToggle.checked) {
+            tracePoints.push({x: yokeX + 150, y: 0});
+            if (tracePoints.length > MAX_TRACE) tracePoints.shift();
+            drawTrace();
+        }
+
+        if (vectorToggle.checked) {
+            // Simple velocity vector
+            const vx = -radius * Math.sin(angle);
+            const vy = radius * Math.cos(angle);
+            drawArrow(crankX, crankY, crankX + vx, crankY + vy, '#ff5252');
+        }
+    }
+
+    function drawPlanetary() {
+        const { sunRadius, planetRadius, numPlanets } = state.planetary;
+        const ringRadius = sunRadius + 2 * planetRadius;
+        const carrierRadius = sunRadius + planetRadius;
+        const angle = time;
+
+        // Fixed Sun Gear
+        ctx.strokeStyle = 'var(--link-fixed)';
+        ctx.lineWidth = 2;
+        drawGear(0, 0, sunRadius, 20);
+
+        // Carrier
+        const carrierAngle = angle * (sunRadius / (sunRadius + ringRadius));
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.beginPath();
+        ctx.arc(0, 0, carrierRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        for (let i = 0; i < numPlanets; i++) {
+            const pAngle = carrierAngle + (i / numPlanets) * Math.PI * 2;
+            const px = carrierRadius * Math.cos(pAngle);
+            const py = carrierRadius * Math.sin(pAngle);
+
+            // Planet gear rotation
+            const planetRot = -carrierAngle * (sunRadius / planetRadius);
+
+            ctx.strokeStyle = 'var(--link-driver)';
+            drawGear(px, py, planetRadius, 12, planetRot);
+            drawLine(0, 0, px, py, 'rgba(255,255,255,0.1)', 2);
+            drawJoint(px, py, 4);
+        }
+
+        // Ring Gear (internal)
+        ctx.strokeStyle = 'var(--link-output)';
+        drawGear(0, 0, ringRadius, 40, 0, true);
+
+        drawJoint(0, 0);
+    }
+
+    // Helpers
+    function drawLine(x1, y1, x2, y2, color, width) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function drawJoint(x, y, radius = 5, color = '#fff') {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    function drawTrace() {
+        if (tracePoints.length < 2) return;
+        ctx.strokeStyle = 'var(--trace)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(tracePoints[0].x, tracePoints[0].y);
+        for (let i = 1; i < tracePoints.length; i++) {
+            ctx.lineTo(tracePoints[i].x, tracePoints[i].y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    function drawGear(x, y, r, teeth, rotation = 0, internal = false) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.beginPath();
+        const innerR = r * 0.9;
+        const outerR = r * 1.1;
+        for (let i = 0; i < teeth * 2; i++) {
+            const a = (i / (teeth * 2)) * Math.PI * 2;
+            const dist = i % 2 === 0 ? outerR : innerR;
+            ctx.lineTo(Math.cos(a) * dist, Math.sin(a) * dist);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawArrow(x1, y1, x2, y2, color) {
+        const headlen = 10;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function drawText(text, x, y, color = 'var(--text-muted)') {
+        ctx.fillStyle = color;
+        ctx.font = '12px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x, y);
+    }
+
+    draw();
+</script>
+</body>
+</html>
