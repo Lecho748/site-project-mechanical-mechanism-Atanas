@@ -11,6 +11,9 @@
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 header{background:var(--panel);padding:6px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);height:42px;flex-wrap:nowrap}
 .tabs{display:flex;gap:3px}
+@media(max-width:768px){.tabs{display:none}.mobile-mech{display:flex!important;align-items:center;gap:6px}}
+.mobile-mech label{font-size:.7rem;color:var(--muted);white-space:nowrap}
+.mobile-mech select{background:#2a2a30;color:var(--text);border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:.72rem;max-width:140px}
 .tab-btn{background:transparent;border:1px solid transparent;color:var(--muted);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:.72rem;white-space:nowrap;transition:.2s}
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--accent);border-color:var(--accent);background:rgba(0,212,255,.1)}
@@ -57,6 +60,15 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <button class="icon-btn lang-btn" id="langToggle">EN</button>
     <button class="icon-btn" id="themeToggle">🌙</button>
     <button class="icon-btn mobile-menu" id="menuBtn" title="Menu">☰</button>
+    <div class="mobile-mech">
+      <select id="mechSelect">
+        <option value="fourbar">Four-Bar</option>
+        <option value="geneva">Geneva Drive</option>
+        <option value="scotch">Scotch Yoke</option>
+        <option value="jansen">Jansen Linkage</option>
+        <option value="planetary">Planetary</option>
+      </select>
+    </div>
   </div>
 </header>
 <div class="main-area">

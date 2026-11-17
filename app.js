@@ -462,7 +462,7 @@ function applyLang(l){
   pauseBtn.textContent=paused?tx.resume:tx.pause;$('resetBtn').textContent=tx.reset;
   $('vizLabel').textContent=tx.viz;$('traceLbl').textContent=tx.trc;
   $('vecLbl').textContent=tx.vec;$('lblLbl').textContent=tx.lbl;
-  $('clearBtn').textContent=tx.clr;$('paramsLabel').textContent=tx.params;
+  $('clearBtn').textContent=tx.clr;$('paramsGroup').innerHTML='<h3>'+tx.params+'</h3>';
   $('descLabel').textContent=tx.desc;$('legendLabel').textContent=tx.legend;
   $('driverLbl').textContent=tx.drv;$('outputLbl').textContent=tx.out;
   $('fixedLbl').textContent=tx.fix;$('traceLbl2').textContent=tx.trc;
@@ -470,15 +470,37 @@ function applyLang(l){
   document.querySelectorAll('.tab-btn').forEach(function(tab){tab.textContent=tab.dataset[l]});
   buildParams();
 }
-$('langToggle').onclick=function(){applyLang(lang==='en'?'bg':'en');updateCol()};
+$('langToggle').onclick=function(){applyLang(lang==='en'?'bg':'en');updateCol();buildParams();};
 
 document.querySelectorAll('.tab-btn').forEach(function(tab){
   tab.onclick=function(){
     document.querySelectorAll('.tab-btn').forEach(function(t){t.classList.remove('active')});
     this.classList.add('active');mech=this.dataset.mech;tracePts=[];
     $('descText').textContent=DESC[mech][lang];buildParams();closeSide();
-  }
+  };
 });
+
+var ms=$('mechSelect');
+if(ms) ms.addEventListener('change',function(){
+  var m=this.value;
+  document.querySelectorAll('.tab-btn').forEach(function(t){t.classList.remove('active')});
+  document.querySelector('.tab-btn[data-mech="'+m+'"]').classList.add('active');
+  mech=m;tracePts=[];$('descText').textContent=DESC[m][lang];buildParams();closeSide();
+});
+
+var mainTitle=$('mainTitle'),menuBtn=$('menuBtn'),toggleBtn=$('toggleBtn');
+if(mainTitle && menuBtn && toggleBtn){
+  menuBtn.onclick=function(){var mm=mainTitle.parentElement.querySelector('.mobile-mech');if(mm) mm.classList.toggle('open')};
+  toggleBtn.onclick=function(){if(window.innerWidth<769)closeSide();else{document.getElementById('sidebar').classList.toggle('collapsed')}};
+}
+
+  // Test that the active tab is initially selected
+  var activeTab = document.querySelector('.tab-btn.active');
+  if(!activeTab){
+    console.warn('No active tab found initially - this might cause issues');
+  } else {
+    console.log('Active tab initially found:', activeTab.dataset.mech);
+  }
 
 var pauseBtn=$('pauseBtn'),resetBtn=$('resetBtn'),speedSlider=$('speedSlider'),speedVal=$('speedVal');
 var traceChk=$('traceChk'),vecChk=$('vecChk'),lblChk=$('lblChk'),clearBtn=$('clearBtn'),paramsGrp=$('paramsGroup');
