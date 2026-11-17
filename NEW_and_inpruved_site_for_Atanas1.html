@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mechanical Mechanisms</title>
+<style>
+:root{--bg:#1a1a1e;--panel:#232329;--accent:#00d4ff;--text:#ddd;--muted:#888;--border:#3a3a44;--fixed:#555;--driver:#e74c3c;--output:#2ecc71;--trace:#f1c40f}
+[data-theme="light"]{--bg:#e8e8ec;--panel:#fff;--accent:#0077cc;--text:#222;--muted:#666;--border:#ccc;--fixed:#aaa;--driver:#c0392b;--output:#1e8449;--trace:#d4ac0d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{background:var(--panel);padding:6px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);height:42px;flex-wrap:nowrap}
+.tabs{display:flex;gap:3px}
+.tab-btn{background:transparent;border:1px solid transparent;color:var(--muted);padding:3px 10px;border-radius:4px;cursor:pointer;font-size:.72rem;white-space:nowrap;transition:.2s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-color:var(--accent);background:rgba(0,212,255,.1)}
+.icon-btn{background:transparent;border:1px solid var(--border);color:var(--text);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;transition:.2s}
+.main-area{flex:1;display:flex;overflow:hidden;position:relative}
+#canvas-container{flex:1;background:radial-gradient(circle,#1e1e24,#111);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.runtime-message{max-width:34rem;padding:1.25rem;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:8px;line-height:1.5;text-align:center}
+[data-theme="light"] #canvas-container{background:radial-gradient(circle,#f2f2f6,#d8d8e0)}
+canvas{width:100%;height:100%;display:block}
+#sidebar{width:280px;min-width:0;background:var(--panel);border-left:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;transition:.3s;flex-shrink:0}
+#sidebar.collapsed{width:0;min-width:0;flex-basis:0;padding:0;border:none;overflow:hidden}
+.sidebar-toggle{position:absolute;top:50%;right:0;transform:translateY(-50%);background:var(--accent);border:none;color:#000;width:22px;height:45px;cursor:pointer;border-radius:5px 0 0 5px;font-size:.9rem;z-index:150;display:flex;align-items:center;justify-content:center}
+.cg{display:flex;flex-direction:column;gap:6px}
+.cg h3{font-size:.7rem;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.slider-row{display:flex;flex-direction:column;gap:3px}
+.slider-label{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.btn-row{display:flex;gap:6px}
+.action-btn{flex:1;background:#333;border:none;color:#fff;padding:6px;border-radius:3px;cursor:pointer;font-size:.7rem;transition:.2s}
+.action-btn:hover{background:#444}.action-btn.primary{background:var(--accent);color:#000;font-weight:700}
+.toggle-row{display:flex;align-items:center;gap:6px;font-size:.7rem;cursor:pointer;user-select:none}
+.desc{font-size:.7rem;line-height:1.4;color:var(--muted);background:rgba(128,128,128,.08);padding:6px;border-radius:3px}
+.legend{font-size:.65rem;display:flex;flex-direction:column;gap:3px}
+.legend-item{display:flex;align-items:center;gap:5px}
+.swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10}
+.overlay.show{display:block}
+@media(max-width:768px){.main-area{flex-direction:column}#sidebar{position:fixed;top:0;right:0;bottom:0;width:min(280px,85vw);z-index:20;border:none;transform:translateX(100%);box-shadow:-4px 0 20px rgba(0,0,0,.4);padding:10px}.sidebar-toggle{display:none}#sidebar.open{transform:translateX(0)}.mobile-menu{display:flex!important}.header-right{flex-wrap:wrap}}
+@media(min-width:769px){.overlay{display:none!important}.mobile-menu{display:none!important}}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#555;border-radius:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="mainTitle" style="font-size:.78rem;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin:0;white-space:nowrap">Mechanical Mechanisms</h1>
+  <div class="header-right" style="display:flex;align-items:center;gap:6px">
+    <div class="tabs">
+      <button class="tab-btn active" data-mech="fourbar" data-en="Four-Bar" data-bg="Четиризвенен механизъм">Four-Bar</button>
+      <button class="tab-btn" data-mech="geneva" data-en="Geneva Drive" data-bg="Женевско колело">Geneva</button>
+      <button class="tab-btn" data-mech="scotch" data-en="Scotch Yoke" data-bg="Кулисен механизъм">Scotch Yoke</button>
+      <button class="tab-btn" data-mech="planetary" data-en="Planetary" data-bg="Планетарна предавка">Planetary</button>
+    </div>
+    <button class="icon-btn lang-btn" id="langToggle">EN</button>
+    <button class="icon-btn" id="themeToggle">🌙</button>
+    <button class="icon-btn mobile-menu" id="menuBtn" title="Menu">☰</button>
+  </div>
+</header>
+<div class="main-area">
+  <div id="canvas-container">
+    <noscript><div class="runtime-message">This simulator needs JavaScript enabled to draw and animate the mechanisms. Enable JavaScript for this local file, then reload the page.</div></noscript>
+    <canvas id="c"></canvas>
+  </div>
+  <div class="overlay" id="overlay"></div>
+  <button class="sidebar-toggle" id="toggleBtn" title="Toggle sidebar">‹</button>
+  <div id="sidebar">
+    <button class="icon-btn" id="closeBtn" title="Close">✕</button>
+    <div class="cg">
+      <h3 id="playbackLabel">Playback</h3>
+      <div class="btn-row">
+        <button class="action-btn primary" id="pauseBtn">Pause</button>
+        <button class="action-btn" id="resetBtn">Reset</button>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label"><span id="speedLabel">Speed multiplier</span><span id="speedVal">1.0×</span></div>
+        <input type="range" id="speedSlider" min="0" max="120" value="30">
+      </div>
+    </div>
+    <div class="cg">
+      <h3 id="vizLabel">Visualization</h3>
+      <label class="toggle-row"><input type="checkbox" id="traceChk" checked> <span id="traceLbl">Trace Path / Следене</span></label>
+      <label class="toggle-row"><input type="checkbox" id="vecChk" checked> <span id="vecLbl">Force Vectors / Вектори</span></label>
+      <label class="toggle-row"><input type="checkbox" id="lblChk" checked> <span id="lblLbl">Labels / Етикети</span></label>
+      <button class="action-btn" id="clearBtn">Clear Trace / Изчисти</button>
+    </div>
+    <div class="cg" id="paramsGroup"><h3 id="paramsLabel">Parameters</h3></div>
+    <div class="cg">
+      <h3 id="descLabel">Description</h3>
+      <div id="mechDesc" class="desc"><span id="descText"></span></div>
+    </div>
+    <div class="cg">
+      <h3 id="legendLabel">Legend</h3>
+      <div class="legend">
+        <div class="legend-item"><div class="swatch" style="background:var(--driver)"></div><span id="driverLbl">Driver</span></div>
+        <div class="legend-item"><div class="swatch" style="background:var(--output)"></div><span id="outputLbl">Output</span></div>
+        <div class="legend-item"><div class="swatch" style="background:var(--fixed)"></div><span id="fixedLbl">Fixed</span></div>
+        <div class="legend-item"><div class="swatch" style="background:var(--trace)"></div><span id="traceLbl2">Trace</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="app.js" defer></script>
+</body>
+</html>

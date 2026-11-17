@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mechanisms",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "const http=require('http');const fs=require('fs');const p=require('path');http.createServer((req,res)=>{let u=req.url.split('?')[0];if(u==='/'||u==='')u='/index.html';try{var d=fs.readFileSync(p.join(__dirname,u));var e=p.extname(u).toLowerCase();var t=e==='.html'?'text/html':e==='.js'?'application/javascript':'application/octet-stream';res.writeHead(200,{'Content-Type':t});res.end(d);}catch(err){res.writeHead(404);res.end();}}).listen(9876);"],
+      "port": 9876
+    }
+  ]
+}
